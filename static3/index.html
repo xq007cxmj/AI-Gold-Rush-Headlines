@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GitHub OAuth 登录示例</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 48px 16px;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #f6f8fa;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 560px;
+      background: #fff;
+      border: 1px solid #d0d7de;
+      border-radius: 12px;
+      padding: 28px;
+      box-shadow: 0 8px 24px rgba(140, 149, 159, 0.2);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 22px;
+      color: #24292f;
+    }
+
+    p {
+      color: #57606a;
+      line-height: 1.6;
+    }
+
+    .user {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 20px 0;
+    }
+
+    .avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: 1px solid #d0d7de;
+      flex-shrink: 0;
+    }
+
+    .user p {
+      margin: 4px 0;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 16px;
+      border: 0;
+      border-radius: 8px;
+      background: #1f883d;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: #1a7f37;
+    }
+
+    .btn.secondary {
+      background: #f6f8fa;
+      color: #24292f;
+      border: 1px solid #d0d7de;
+    }
+
+    .btn.secondary:hover {
+      background: #eaeef2;
+    }
+
+    pre {
+      margin-top: 20px;
+      padding: 12px;
+      background: #f6f8fa;
+      border: 1px solid #d0d7de;
+      border-radius: 8px;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #24292f;
+    }
+
+    .error {
+      color: #cf222e;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="card">加载中...</div>
+
+  <script>
+    const app = document.getElementById("app");
+
+    // 防止把 GitHub 返回的数据直接当 HTML 插入，避免 XSS
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => {
+        return {
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        }[char];
+      });
+    }
+
+    async function fetchMe() {
+      const res = await fetch("/api/me", {
+        credentials: "same-origin",
+      });
+
+      if (!res.ok) {
+        throw new Error(`请求 /api/me 失败：${res.status}`);
+      }
+
+      return res.json();
+    }
+
+    function renderLoggedOut() {
+      app.innerHTML = `
+        <h1>GitHub OAuth 登录示例</h1>
+        <p>你尚未登录，请使用 GitHub 账号登录。</p>
+        <div class="actions">
+          <a class="btn" href="/auth/github/login?next=/">使用 GitHub 登录</a>
+        </div>
+      `;
+    }
+
+    function renderLoggedIn(user) {
+      app.innerHTML = `
+        <h1>已登录</h1>
+        <div class="user">
+          <img
+            class="avatar"
+            src="${escapeHtml(user.avatar_url || "")}"
+            alt="GitHub avatar"
+          />
+          <div>
+            <p><strong>${escapeHtml(user.name || user.login)}</strong></p>
+            <p>@${escapeHtml(user.login)}</p>
+            <p>${user.email ? escapeHtml(user.email) : "邮箱未公开"}</p>
+            <p>
+              <a href="${escapeHtml(user.html_url || "#")}" target="_blank" rel="noopener noreferrer">
+                GitHub 主页
+              </a>
+            </p>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="loadProfileBtn" class="btn">调用受保护接口</button>
+          <a class="btn secondary" href="/auth/logout">退出登录</a>
+        </div>
+
+        <pre id="profileResult"></pre>
+      `;
+
+      document
+        .getElementById("loadProfileBtn")
+        .addEventListener("click", loadProfile);
+    }
+
+    async function loadProfile() {
+      const pre = document.getElementById("profileResult");
+      pre.textContent = "加载中...";
+
+      const res = await fetch("/api/profile", {
+        credentials: "same-origin",
+      });
+
+      if (res.status === 401) {
+        pre.textContent = "401 未登录，请重新登录。";
+        return;
+      }
+
+      if (!res.ok) {
+        pre.textContent = `请求失败：${res.status}`;
+        return;
+      }
+
+      const data = await res.json();
+      pre.textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function init() {
+      try {
+        const data = await fetchMe();
+
+        if (data.authenticated) {
+          renderLoggedIn(data.user);
+        } else {
+          renderLoggedOut();
+        }
+      } catch (err) {
+        app.innerHTML = `<h1 class="error">加载失败</h1><p>${escapeHtml(err.message)}</p>`;
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
