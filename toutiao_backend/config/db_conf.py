@@ -8,7 +8,7 @@ ASYNC_DATABASE_URL = (
 # 创建异步引擎
 async_engine = create_async_engine(
     ASYNC_DATABASE_URL,
-    echo=True,  # 是否打印SQL语句
+    # echo=True,  # 是否打印SQL语句
     pool_size=10,  # 连接池大小
     max_overflow=20,  # 最大溢出连接数
 )

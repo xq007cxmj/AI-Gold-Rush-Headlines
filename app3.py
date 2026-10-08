@@ -121,6 +121,7 @@ async def github_callback(
     ):
         raise HTTPException(status_code=400, detail="state 校验失败，疑似 CSRF")
 
+    print(f"code: {code}")
     async with httpx.AsyncClient(timeout=10.0) as client:
         # --- 用 code 换 access_token（这一步必须在后端做，因为要带 client_secret）---
         token_resp = await client.post(
@@ -142,6 +143,7 @@ async def github_callback(
                 status_code=400,
                 detail=f"获取 access_token 失败: {token_data.get('error_description') or token_data}",
             )
+        print(f"access_token: {access_token}")
 
         headers = {
             "Authorization": f"Bearer {access_token}",
