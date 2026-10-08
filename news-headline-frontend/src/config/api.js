@@ -14,7 +14,7 @@ export const aiChatConfig = {
   apiEndpoint:'https://discovery-api.intern-ai.org.cn/v1/chat/completions', //'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
   
   // API Key (由开发人员指定)
-  apiKey: 'sk-3991ee42d3afd3ec14d2ff936f346e800cae611311a97bf4cbac7ccd9fe849ba',
+  apiKey: 'your-apikey',
   
   // 使用的模型
   model: 'kimi-k2.6'
